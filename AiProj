@@ -1,3 +1,20 @@
+public interface INeuralLayer : IList<INeuron>
+{
+    void Pulse(INeuralNet net);
+    void ApplyLearning(INeuralNet net);
+}
+
+public interface INeuron : INeuronSignal, INeuronReceptor
+{
+    void Pulse(INeuralLayer layer);
+    void ApplyLearning(INeuralLayer layer);
+
+    NeuralFactor Bias { get; set; }
+
+    double BiasWeight { get; set; }
+    double Error { get; set; }
+}
+
 public interface INeuronSignal
 {
     double Output { get; set; }
@@ -8,6 +25,16 @@ public interface INeuronReceptor
     Dictionary<INeuronSignal, NeuralFactor> Input { get; }
 
 }
+public interface INeuralNet
+{
+    INeuralLayer HiddenLayer { get; set; }
+    INeuralLayer OutPutLayer { get; set; }
+    -INeuralLayer PerceptionLayer { get; set; }
+
+    void ApplyLearning();
+    void Pulse();
+}
+
 public class NeuralFactor
 {
     public NeuralFactor(double weight)
@@ -29,6 +56,7 @@ public class NeuralFactor
         get { return m_delta; }
         set { m_delta = value; }
     }
+
     public void ApplyDelta()
     {
         m_weight += m_delta;
