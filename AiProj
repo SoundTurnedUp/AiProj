@@ -10,7 +10,6 @@ public interface INeuron : INeuronSignal, INeuronReceptor
     void ApplyLearning(INeuralLayer layer);
 
     NeuralFactor Bias { get; set; }
-
     double BiasWeight { get; set; }
     double Error { get; set; }
 }
@@ -29,7 +28,7 @@ public interface INeuralNet
 {
     INeuralLayer HiddenLayer { get; set; }
     INeuralLayer OutPutLayer { get; set; }
-    -INeuralLayer PerceptionLayer { get; set; }
+    INeuralLayer PerceptionLayer { get; set; }
 
     void ApplyLearning();
     void Pulse();
@@ -61,5 +60,67 @@ public class NeuralFactor
     {
         m_weight += m_delta;
         m_delta = 0;
+    }
+}
+public class Neuron : INeuron
+{
+    public NeuralFactor Bias { get; set; }
+    public double BiasWeight { get; set; }
+    public double Error { get; set; }
+
+    private Dictionary<INeuronSignal, NeuralFactor> m_input;
+    private double m_output;
+    private Func<double, double> ActivationFunction;
+
+
+    public Neuron()
+    {
+        Bias = new NeuralFactor(0.0);
+        BiasWeight = 0.0;
+        Error = 0.0;
+        m_input = new Dictionary<INeuronSignal, NeuralFactor>();
+        m_output = 0.0;
+        ActivationFunction = Sigmoid;
+    }
+    private double Sigmoid(double value)
+    {
+        return 1 / (1 + Math.Exp(-value));
+    }
+
+    private double ReLU(double value)
+    {
+        return Math.Max(0, value); 
+    }
+
+    public void SetActivationFunction(Func<double, double> activationFunc)
+    {
+        ActivationFunction = activationFunc;
+    }
+
+    public void ApplyLearning(double learningRate)
+    {
+        foreach (var input in m_input)
+        {
+            input.Value.Delta = learningRate * Error * input.Key.Output;
+            input.Value.ApplyDelta();
+        }
+
+        Bias.Delta = learningRate * Error;
+        Bias.ApplyDelta();
+    }
+    public void Pulse(INeuralLayer layer)
+    {
+        lock (this)
+        {
+            double sum = 0;
+
+            foreach (KeyValuePair<INeuronSignal, NeuralFactor> item in m_input)
+            {
+                sum += item.Key.Output * item.Value.Weight;
+            }
+
+            sum += Bias.Weight * BiasWeight;
+            m_output = ActivationFunction(sum);
+        }
     }
 }
